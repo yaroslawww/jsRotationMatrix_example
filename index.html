@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+<div>
+    <table style="width: 100%; border: 1px solid">
+        <tr>
+            <th colspan="3">matrix</th>
+        </tr>
+        <tr>
+            <td style="border: 1px solid" id="m0">0</td>
+            <td style="border: 1px solid" id="m1">1</td>
+            <td style="border: 1px solid" id="m2">2</td>
+        </tr>
+        <tr>
+            <td style="border: 1px solid" id="m3">3</td>
+            <td style="border: 1px solid" id="m4">4</td>
+            <td style="border: 1px solid" id="m5">5</td>
+        </tr>
+        <tr>
+            <td style="border: 1px solid" id="m6">6</td>
+            <td style="border: 1px solid" id="m7">7</td>
+            <td style="border: 1px solid" id="m8">8</td>
+        </tr>
+    </table>
+    <table style="width: 100%; border: 1px solid">
+        <tr>
+            <th>alpha</th>
+            <th>beta</th>
+            <th>gamma</th>
+        </tr>
+        <tr>
+            <td style="border: 1px solid red" id="alpha">alpha</td>
+            <td style="border: 1px solid aqua" id="beta">beta</td>
+            <td style="border: 1px solid darkorchid" id="gamma">gamma</td>
+        </tr>
+    </table>
+</div>
+
+<div id="brand">
+    <img id="logo" src="https://webcap.com/wp-content/uploads/2017/11/logo-webcap-new-blue.svg" alt="">
+</div>
+
+<script>
+
+    /**
+     * Доп литература
+     * https://ru.wikipedia.org/wiki/%D0%9C%D0%B0%D1%82%D1%80%D0%B8%D1%86%D0%B0_%D0%BF%D0%BE%D0%B2%D0%BE%D1%80%D0%BE%D1%82%D0%B0#%D0%92%D1%8B%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D0%B5_%D0%BC%D0%B0%D1%82%D1%80%D0%B8%D1%86%D1%8B_%D0%BF%D0%BE%D0%B2%D0%BE%D1%80%D0%BE%D1%82%D0%B0_%D1%87%D0%B5%D1%80%D0%B5%D0%B7_%D1%83%D0%B3%D0%BB%D1%8B_%D0%AD%D0%B9%D0%BB%D0%B5%D1%80%D0%B0
+     * https://dev.opera.com/articles/w3c-device-orientation-usage/#practicalconsiderations_1
+     */
+    class RotationMatrixFromEuler {
+        constructor() {
+            this.currentScreenOrientation = window.orientation || 0
+            this.currentDeviceOrientation = null
+            this.coefDegToRad = Math.PI / 180
+
+            window.addEventListener('orientationchange', () => {
+                this.currentScreenOrientation = window.orientation
+            }, false);
+
+            window.addEventListener('deviceorientation', e => {
+                this.currentDeviceOrientation = e
+            }, false)
+        }
+
+        degToRad(val) {
+            return val ? val * this.coefDegToRad : 0
+        }
+
+        getBaseRotationMatrix(alpha, beta, gamma) {
+            const _x = this.degToRad(beta)
+            const _y = this.degToRad(gamma)
+            const _z = this.degToRad(alpha)
+
+            const cX = Math.cos(_x)
+            const cY = Math.cos(_y)
+            const cZ = Math.cos(_z)
+            const sX = Math.sin(_x)
+            const sY = Math.sin(_y)
+            const sZ = Math.sin(_z)
+
+            //
+            // ZXY-ordered rotation matrix construction.
+            //
+
+            const m11 = cZ * cY - sZ * sX * sY
+            const m12 = -cX * sZ
+            const m13 = cY * sZ * sX + cZ * sY
+
+            const m21 = cY * sZ + cZ * sX * sY
+            const m22 = cZ * cX
+            const m23 = sZ * sY - cZ * cY * sX
+
+            const m31 = -cX * sY
+            const m32 = sX
+            const m33 = cX * cY
+
+            return [
+                m11, m12, m13,
+                m21, m22, m23,
+                m31, m32, m33
+            ];
+        }
+
+        getScreenTransformationMatrix() {
+            const orientationAngle = this.degToRad(this.currentScreenOrientation)
+
+            const cA = Math.cos(orientationAngle)
+            const sA = Math.sin(orientationAngle)
+
+            // Construct our screen transformation matrix
+            const r_s = [
+                cA, -sA, 0,
+                sA, cA, 0,
+                0, 0, 1
+            ];
+
+            return r_s;
+        }
+
+        getWorldTransformationMatrix() {
+            var x = 90 * this.coefDegToRad
+
+            var cA = Math.cos(x)
+            var sA = Math.sin(x)
+
+            return [
+                1, 0, 0,
+                0, cA, -sA,
+                0, sA, cA
+            ]
+        }
+
+        static matrixMultiply(a, b) {
+            let final = [];
+
+            final[0] = a[0] * b[0] + a[1] * b[3] + a[2] * b[6];
+            final[1] = a[0] * b[1] + a[1] * b[4] + a[2] * b[7];
+            final[2] = a[0] * b[2] + a[1] * b[5] + a[2] * b[8];
+
+            final[3] = a[3] * b[0] + a[4] * b[3] + a[5] * b[6];
+            final[4] = a[3] * b[1] + a[4] * b[4] + a[5] * b[7];
+            final[5] = a[3] * b[2] + a[4] * b[5] + a[5] * b[8];
+
+            final[6] = a[6] * b[0] + a[7] * b[3] + a[8] * b[6];
+            final[7] = a[6] * b[1] + a[7] * b[4] + a[8] * b[7];
+            final[8] = a[6] * b[2] + a[7] * b[5] + a[8] * b[8];
+
+            return final;
+        }
+
+        computeMatrix() {
+            if (this.currentDeviceOrientation == null) {
+                return null
+            }
+
+            const rotationMatrix = this.getBaseRotationMatrix(
+                this.currentDeviceOrientation.alpha,
+                this.currentDeviceOrientation.beta,
+                this.currentDeviceOrientation.gamma
+            );
+
+            const screenTransform = this.getScreenTransformationMatrix() // r_s
+
+            const screenAdjustedMatrix = RotationMatrixFromEuler.matrixMultiply(rotationMatrix, screenTransform) // R_s
+
+            const worldTransform = this.getWorldTransformationMatrix() // r_w
+
+            return RotationMatrixFromEuler.matrixMultiply(screenAdjustedMatrix, worldTransform); // R_w = [ m11, m12, m13, m21, m22, m23, m31, m32, m33 ]
+        }
+    }
+
+
+    let matrixHelper = new RotationMatrixFromEuler
+
+
+    function render() {
+        let finalMatrix = matrixHelper.computeMatrix();
+        if (finalMatrix != null) {
+
+            finalMatrix.forEach((val, index) => {
+                document.getElementById('m' + index).innerText = (val * 100).toFixed(0)
+            })
+
+            document.getElementById('logo').style.transform = 'translate(' + ((finalMatrix[1] * -50)) + 'px, ' + ((finalMatrix[8] * 50)) + 'px) rotateY(' + (finalMatrix[1] * 20) + 'deg)'
+
+            document.getElementById('alpha').innerText = Math.round(matrixHelper.currentDeviceOrientation.alpha)
+            document.getElementById('beta').innerText = Math.round(matrixHelper.currentDeviceOrientation.beta)
+            document.getElementById('gamma').innerText = Math.round(matrixHelper.currentDeviceOrientation.gamma)
+        }
+    }
+
+
+    //requestAnimationFrame
+    window.requestAnimFrame = (function () {
+        return window.requestAnimationFrame ||
+            window.webkitRequestAnimationFrame ||
+            window.mozRequestAnimationFrame ||
+            function (callback) {
+                window.setTimeout(callback, 1000 / 60);
+            };
+    })();
+
+    (function animloop() {
+        requestAnimFrame(animloop);
+        render();
+    })();
+
+
+</script>
+<style>
+
+    #brand {
+        position: fixed;
+        top: calc(50% - 30px);
+        left: calc(50% - 85px);
+        width: 170px;
+        height: 60px;
+        animation: imageBounce 10s infinite;
+
+    }
+
+    #brand img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center;
+        transition: transform 0.5s;
+    }
+
+    @keyframes imageBounce {
+        0% {
+            transform: translate(0, 0) scale(0.98, 0.98) perspective(300px);
+        }
+        50% {
+            transform: translate(10px, 0) scale(1, 1) perspective(10px);
+        }
+        100% {
+            transform: translate(0, 0) scale(0.98, 0.98) perspective(10px);
+        }
+    }
+</style>
+
+</body>
+</html>
